@@ -1,5 +1,7 @@
 import os
-os.system('pip install --upgrade selenium')
+os.system('pip install --upgrade selenium') # selenium 항상 최신버전 유지
+# pip install beautifulsoup4
+# pip install lxml
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
