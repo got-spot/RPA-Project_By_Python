@@ -1,18 +1,65 @@
-import os, time
+# import os
 # os.system('pip install --upgrade selenium') selenium 항상 최신버전 유지
 # pip install lxml
-
-from selenium.webdriver.common.by import By
+# pip install requests
+import os, time, csv, re
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC 
 from selenium.webdriver.chrome.options import Options
 
 options = Options()
 options.add_experimental_option('detach', True) # 브라우저 바로 닫힘 방지 옵션
-options.add_experimental_option('prefs', {'download.defalut_directory':r'C:\Users\rlaal\OneDrive\바탕 화면\Python_Rpa'}) # download 경로지정
-browser = webdriver.Chrome(options=options)
+# options.add_experimental_option('prefs', {'download.defalut_directory':r'C:\Users\rlaal\OneDrive\바탕 화면\Python_Rpa'}) # download 경로지정
+com_nums = [] # 사업자 등록번호 list
 
-browser.get("https://new.cretop.com/?h=1702989839177") # 크레탑으로 이동
+def scrap():    # 동종업종 사업자등록번호 저장 반복문
+    for i in range(1, 101): # 100개 이하일 경우 탈출문 작성 필
+        try:
+            xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i)
+            pages = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 
+            next_page = browser.find_element(By.XPATH, pages)
+            elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+            for elem in elements:
+                elem.click() 
+                soup = BeautifulSoup(browser.page_source, 'html.parser')
+                corp = soup.css.select_one('#winCorpInfo > div.layerPop.layerPopM > div.cont > table > tbody > tr:nth-child(8) > td') # 사업자 등록번호
+                com_num = corp.get_text()
+                com_nums.append(com_num) # com_nums 리스트에 값 추가
+                browser.find_element(By.LINK_TEXT, "닫기").click() # 닫기 버튼 클릭
+            if next_page: # 다음 페이지 있으면 클릭 
+                browser.find_element(By.XPATH, pages).click()
+            else:
+                break
+        except Exception as e:
+            print(f'에러 발생: {e}')
+
+browser = webdriver.Chrome(options=options)
+# browser.maximize_window()
+wait = WebDriverWait(browser, 10)
+url = "https://dart.fss.or.kr/dsab007/main.do?option=corp"
+
+browser.get(url) # DART 통합검색 이동
+
+browser.find_element(By.ID, "btnPlus").click() # 상세조건열기
+browser.find_element(By.ID, "businessNm").click() # 업종 클릭
+time.sleep(10) # 업종 선택 대기
+
+browser.find_element(By.XPATH, '//*[@id="maxResultsCb"]/option[4]').click() # 조회건수 100 
+browser.find_element(By.XPATH, '//*[@id="corporationType"]/option[2]').click() # 유가증권시장
+browser.find_element(By.XPATH, '//*[@id="searchForm"]/div[2]/div[2]/a[1]').click() # 검색
+time.sleep(2)
+scrap() # 유가증권시장 scrap
+
+browser.find_element(By.XPATH, '//*[@id="corporationType"]/option[3]').click() # 코스닥시장
+browser.find_element(By.XPATH, '//*[@id="searchForm"]/div[2]/div[2]/a[1]').click() # 검색
+scrap() # 코스닥시장 scrap
+
+# ----------------------------------------------
+url = "https://new.cretop.com/?h=1702989839177"
+browser.get(url) # 크레탑으로 이동
 time.sleep(2)
 
 browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div/div[2]/div/div/div[2]/div[2]/div[2]/button').click() #닫기 버튼 
@@ -41,14 +88,13 @@ browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div/div/ul/b
 
 # browser.find_element(By.ID, "PLCM050P2_certifyNumber").send_keys("인증번호6자리")
 # -----------------------수동입력-----------------------------------------------------
-
-time.sleep(30) #문자 입력 대기
-
+'''
+time.sleep(30) #문자 입력하는 시간
 
 browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[2]/div[2]/div/div/div[2]/div/div/div[2]/div/button').click() #인증 버튼
 time.sleep(1)
-
-browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div/div/ul/button').click() # 본인인증이 성공하였습니다 [확인] 버튼
+'''
+browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div/div/ul/button').click() # 본인인증에 성공하였습니다 [확인] 버튼
 time.sleep(1)
 
 browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[2]/div[2]/div/div/ul/button').click() # 다시 로그인 해주세요 [확인] 버튼
@@ -61,33 +107,41 @@ time.sleep(2)
 browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div/div[2]/div/div/ul/button').click() # 김민성님 로그인 되었습니다 [확인] 버튼
 time.sleep(5)
 
-browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys("삼성물산") # 검색어 입력
-
-browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/button').click() # 검색버튼 클릭.
-
-browser.find_element(By.XPATH, '//*[@id="et-area"]/div/div[2]/ul/li[1]/div/ul[3]/li[4]/a').click() # 재무 
-
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[1]/div[2]/div/span[2]/label').click() # 일반기업회계 
-
-browser.find_element(By.ID, "forms").click() # 양식
-
-browser.find_element(By.XPATH, '//*[@id="forms"]/option[2]').click() # 전계정 
-'''
-browser.find_element(By.ID, "range").click() # 범위 
-browser.find_element(By.XPATH, '//*[@id="range"]/option[1]').click() # option[1] : 3년 option[2] : 5년
+''' 자동 로그아웃 
+browser.find_element(By.XPATH,'//*[@id="app"]/div[2]/div/div[2]/div/div/ul/button').click() 자동로그아웃 처리 되었습니다 [확인]
+browser.find_element(By.ID, "pwModel").send_keys("kac100!!") # PW 입력
+browser.find_element(By.CSS_SELECTOR, "[title='로그인']").click() #로그인 클릭
+time.sleep(2)
+browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div/div[2]/div/div/ul/button').click() # 김민성님 로그인 되었습니다 [확인] 버튼
 '''
 
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[7]/button').click() # 조회하기
+# -----csv 반복문 지점-----
+for i in range(len(com_nums)):
 
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[1]/div/div/div[2]/div/div[1]/div/div/button').click() #제무제표 다운로드
-browser.find_element(By.LINK_TEXT, "손익계산서").click() 
+    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys(com_nums[i]) # 검색어 입력
 
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[2]/div/div/div[2]/div/div[1]/div/div/button').click() #손익계산서 다운로드
+    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/button').click() # 검색버튼 클릭.
 
-browser.find_element(By.LINK_TEXT, "재무분석").click() 
+    browser.find_element(By.XPATH, '//*[@id="et-area"]/div/div[2]/ul/li/div/ul[3]/li[4]/a').click() # 재무 
 
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 일반기업회계
+    browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[1]/div[2]/div/span[2]/label').click() # 일반기업회계 
 
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 조회하기
+    browser.find_element(By.XPATH, '//*[@id="forms"]/option[2]').click() # 전계정 
+    
+    # browser.find_element(By.XPATH, '//*[@id="range"]/option[1]').click() # option[1] : 3년 option[2] : 5년
+    
+    browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[7]/button').click() # 조회하기
+    time.sleep(1)
 
-browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[2]/div[2]/div[1]/div/div/button').click() #재무분석 다운로드
+    # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[1]/div/div/div[2]/div/div[1]/div/div/button').click() 제무제표 excel 다운로드 클릭
+    
+    browser.find_element(By.LINK_TEXT, "손익계산서").click() 
+    # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[2]/div/div/div[2]/div/div[1]/div/div/button').click() 손익계산서 excel 다운로드 클릭
+
+    browser.find_element(By.LINK_TEXT, "재무분석").click() 
+
+    browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 일반기업회계
+
+    browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 조회하기
+
+    # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[2]/div[2]/div[1]/div/div/button').click() 재무분석 excel 다운로드 클릭
