@@ -13,30 +13,43 @@ from selenium.webdriver.chrome.options import Options
 options = Options()
 options.add_experimental_option('detach', True) # 브라우저 바로 닫힘 방지 옵션
 # options.add_experimental_option('prefs', {'download.defalut_directory':r'C:\Users\rlaal\OneDrive\바탕 화면\Python_Rpa'}) # download 경로지정
+browser = webdriver.Chrome(options=options)
 com_nums = [] # 사업자 등록번호 list
 
+pre_page = browser.find_element(By.XPATH, '//*[@id="psWrap"]/div[2]/ul/li[1]/a')
 def scrap():    # 동종업종 사업자등록번호 저장 반복문
-    for i in range(1, 101): # 100개 이하일 경우 탈출문 작성 필
-        try:
-            xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i)
-            pages = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 
-            next_page = browser.find_element(By.XPATH, pages)
-            elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
-            for elem in elements:
-                elem.click() 
-                soup = BeautifulSoup(browser.page_source, 'html.parser')
-                corp = soup.css.select_one('#winCorpInfo > div.layerPop.layerPopM > div.cont > table > tbody > tr:nth-child(8) > td') # 사업자 등록번호
-                com_num = corp.get_text()
-                com_nums.append(com_num) # com_nums 리스트에 값 추가
-                browser.find_element(By.LINK_TEXT, "닫기").click() # 닫기 버튼 클릭
-            if next_page: # 다음 페이지 있으면 클릭 
-                browser.find_element(By.XPATH, pages).click()
-            else:
-                break
-        except Exception as e:
-            print(f'에러 발생: {e}')
+    while pre_page:
+        for i in range(1, 101): # 100개 이하일 때 탈출문 작성 
+            try:
+                xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i) # 업체명 xpath
+                pages = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 
+                next_page = browser.find_element(By.XPATH, pages)
+                elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+                for elem in elements:
+                    elem.click() 
+                    soup = BeautifulSoup(browser.page_source, 'html.parser')
+                    corp = soup.css.select_one('#winCorpInfo > div.layerPop.layerPopM > div.cont > table > tbody > tr:nth-child(8) > td') # 사업자 등록번호
+                    com_num = corp.get_text()
+                    com_nums.append(com_num) # com_nums 리스트에 값 추가
+                    browser.find_element(By.LINK_TEXT, "닫기").click() # 닫기 버튼 클릭
+                next_page.click() # 다음 페이지가 없으면 클릭 불가
+                pre_page = next_page
+            except Exception as e:
+                print(f'에러 발생: {e}')
+                
+def excel_down():
+    for i in range(len(com_nums)):
+        filename = "재무재표{}.csv".format(i)
+        f = open(filename, "w", encoding="utf-8-sig", newline="")
+        writer = csv.writer(f)
+        soup = BeautifulSoup(browser.page_source, "lxml")
 
-browser = webdriver.Chrome(options=options)
+        data_rows = soup.find("table", attrs={"class":"details"}).find("tbody").find_all("tr")
+        for row in data_rows:
+            columns = row.find_all("td")
+            data = [column.get_text() for column in columns]
+            writer.writerow(data)
+
 # browser.maximize_window()
 wait = WebDriverWait(browser, 10)
 url = "https://dart.fss.or.kr/dsab007/main.do?option=corp"
@@ -117,15 +130,10 @@ browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div/div[2]/div/div/ul/butt
 
 # -----csv 반복문 지점-----
 for i in range(len(com_nums)):
-
     browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys(com_nums[i]) # 검색어 입력
-
     browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/button').click() # 검색버튼 클릭.
-
     browser.find_element(By.XPATH, '//*[@id="et-area"]/div/div[2]/ul/li/div/ul[3]/li[4]/a').click() # 재무 
-
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[1]/div[2]/div/span[2]/label').click() # 일반기업회계 
-
     browser.find_element(By.XPATH, '//*[@id="forms"]/option[2]').click() # 전계정 
     
     # browser.find_element(By.XPATH, '//*[@id="range"]/option[1]').click() # option[1] : 3년 option[2] : 5년
@@ -133,15 +141,13 @@ for i in range(len(com_nums)):
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[7]/button').click() # 조회하기
     time.sleep(1)
 
-    # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[1]/div/div/div[2]/div/div[1]/div/div/button').click() 제무제표 excel 다운로드 클릭
+    excel_down() # 재무제표 다운
     
     browser.find_element(By.LINK_TEXT, "손익계산서").click() 
     # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[2]/div/div/div[2]/div/div[1]/div/div/button').click() 손익계산서 excel 다운로드 클릭
 
     browser.find_element(By.LINK_TEXT, "재무분석").click() 
-
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 일반기업회계
-
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 조회하기
 
     # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[2]/div[2]/div[1]/div/div/button').click() 재무분석 excel 다운로드 클릭
