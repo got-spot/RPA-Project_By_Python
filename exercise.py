@@ -10,6 +10,7 @@ options = Options()
 options.add_experimental_option('detach', True)
 
 browser = webdriver.Chrome(options=options)
+wait = WebDriverWait(browser, 10)
 
 url = "https://dart.fss.or.kr/dsab007/main.do?option=corp"
 browser.get(url)
@@ -20,31 +21,44 @@ browser.find_element(By.ID, "businessNm").click()
 time.sleep(10) # 업종 선택시간
 
 browser.find_element(By.XPATH, '//*[@id="maxResultsCb"]/option[4]').click() # 조회 100
-browser.find_element(By.XPATH, '//*[@id="corporationType"]/option[2]').click() # 유가증권
+browser.find_element(By.XPATH, '//*[@id="corporationType"]/option[2]').click() # 유가증권시장
 browser.find_element(By.XPATH, '//*[@id="searchForm"]/div[2]/div[2]/a[1]').click() # 검색
 time.sleep(3)
 
+com_nums = [] # 사업자 등록번호 list
 
-im = browser.find_element(By.XPATH, '//*[@id="tbody"]/tr[100]/td[2]/span/a')
-print(im)
+page = 1
 
-
-
-
-'''
-for i in range(1, 101):
+while True:
     try:
-        xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i)
-        elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
-        for elem in elements:
+        # 페이지 로딩 대기
+        wait = WebDriverWait(browser, 10)
+        name_xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i) # 업체명 xpath
+        elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, name_xpath)))
+        page_xpath = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 xpath
+
+        # 요소가 100개 미만일 경우, 끝 요소까지 반복 후 탈출
+        for i in range(len(elements)):
+            elem = elements[i]
             elem.click()
             soup = BeautifulSoup(browser.page_source, 'html.parser')
             corp = soup.select_one('#winCorpInfo > div.layerPop.layerPopM > div.cont > table > tbody > tr:nth-child(8) > td')
             com_num = corp.get_text()
-            com_nums.append(com_num) # com_nums 리스트에 값 추가
-            browser.find_element(By.LINK_TEXT, "닫기").click()
-    except Exception as e:
-        print(f'에러 발생: {e}')
 
-# 전역 변수 com_nums는 이제 어디서든 사용 가능
- '''       
+            # com_nums 리스트에 값이 이미 있는 경우 continue
+            if com_num in com_nums:
+                continue
+            else:
+                com_nums.append(com_num)
+
+            browser.find_element(By.LINK_TEXT, "닫기").click()
+
+        # 다음 페이지 이동
+        browser.find_element(By.XPATH, page_xpath).click()
+        page += 1
+
+    except Exception as e:
+        print('페이지 끝')
+        break
+
+# print(len(com_nums))

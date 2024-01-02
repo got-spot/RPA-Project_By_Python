@@ -1,7 +1,6 @@
 # import os
 # os.system('pip install --upgrade selenium') selenium 항상 최신버전 유지
-# pip install lxml
-# pip install requests
+import openpyxl
 import os, time, csv, re
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -18,13 +17,13 @@ com_nums = [] # 사업자 등록번호 list
 
 pre_page = browser.find_element(By.XPATH, '//*[@id="psWrap"]/div[2]/ul/li[1]/a')
 def scrap():    # 동종업종 사업자등록번호 저장 반복문
-    while pre_page:
+    while pre_page: # 현재 페이지가 있을때까지
         for i in range(1, 101): # 100개 이하일 때 탈출문 작성 
             try:
-                xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i) # 업체명 xpath
-                pages = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 
-                next_page = browser.find_element(By.XPATH, pages)
-                elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+                name_xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i) # 업체명 xpath
+                page_xpath = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 xpath
+                next_page = browser.find_element(By.XPATH, page_xpath)
+                elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, name_xpath)))
                 for elem in elements:
                     elem.click() 
                     soup = BeautifulSoup(browser.page_source, 'html.parser')
@@ -49,6 +48,7 @@ def excel_down():
             columns = row.find_all("td")
             data = [column.get_text() for column in columns]
             writer.writerow(data)
+        f.close()
 
 # browser.maximize_window()
 wait = WebDriverWait(browser, 10)
