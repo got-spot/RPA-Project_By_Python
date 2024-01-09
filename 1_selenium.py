@@ -1,7 +1,9 @@
 # import os
 # os.system('pip install --upgrade selenium') selenium 항상 최신버전 유지
-import openpyxl
+# pip install lxml
+# pip install requests
 import os, time, csv, re
+from openpyxl import Workbook, load_workbook
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -15,26 +17,43 @@ options.add_experimental_option('detach', True) # 브라우저 바로 닫힘 방
 browser = webdriver.Chrome(options=options)
 com_nums = [] # 사업자 등록번호 list
 
+wb = Workbook()
+ws = wb.active
+ws.title = "동종업종"
+data = []
+
 pre_page = browser.find_element(By.XPATH, '//*[@id="psWrap"]/div[2]/ul/li[1]/a')
+soup = BeautifulSoup(browser.page_source, 'html.parser')
 def scrap():    # 동종업종 사업자등록번호 저장 반복문
-    while pre_page: # 현재 페이지가 있을때까지
-        for i in range(1, 101): # 100개 이하일 때 탈출문 작성 
-            try:
-                name_xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i) # 업체명 xpath
-                page_xpath = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 xpath
-                next_page = browser.find_element(By.XPATH, page_xpath)
-                elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, name_xpath)))
-                for elem in elements:
-                    elem.click() 
-                    soup = BeautifulSoup(browser.page_source, 'html.parser')
-                    corp = soup.css.select_one('#winCorpInfo > div.layerPop.layerPopM > div.cont > table > tbody > tr:nth-child(8) > td') # 사업자 등록번호
-                    com_num = corp.get_text()
-                    com_nums.append(com_num) # com_nums 리스트에 값 추가
-                    browser.find_element(By.LINK_TEXT, "닫기").click() # 닫기 버튼 클릭
-                next_page.click() # 다음 페이지가 없으면 클릭 불가
-                pre_page = next_page
-            except Exception as e:
-                print(f'에러 발생: {e}')
+    while True:
+        try:
+            # 페이지 로딩 대기
+            wait = WebDriverWait(browser, 10)
+            name_xpath = '//*[@id="tbody"]/tr[{}]/td[2]/span/a'.format(i) # 업체명 xpath
+            elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, name_xpath)))
+            page_xpath = '//*[@id="psWrap"]/div[2]/ul/li[{}]/a'.format(i+1) # 다음 페이지 이동 xpath
+
+            # 요소가 100개 미만일 경우, 끝 요소까지 반복 후 탈출
+            for i in range(len(elements)):
+                elem = elements[i]
+                elem.click()
+                corp = soup.select_one('#winCorpInfo > div.layerPop.layerPopM > div.cont > table > tbody > tr:nth-child(8) > td')
+                com_num = corp.get_text()
+
+                # com_nums 리스트에 값이 이미 있는 경우 continue
+                if com_num in com_nums:
+                    continue
+                else:
+                    com_nums.append(com_num)
+
+                browser.find_element(By.LINK_TEXT, "닫기").click()
+
+            # 다음 페이지 이동
+            browser.find_element(By.XPATH, page_xpath).click()
+
+        except Exception as e:
+            print('페이지 끝')
+            break
                 
 def excel_down():
     for i in range(len(com_nums)):
@@ -48,7 +67,6 @@ def excel_down():
             columns = row.find_all("td")
             data = [column.get_text() for column in columns]
             writer.writerow(data)
-        f.close()
 
 # browser.maximize_window()
 wait = WebDriverWait(browser, 10)
