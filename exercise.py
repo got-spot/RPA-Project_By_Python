@@ -19,6 +19,11 @@ browser.get(url)
 
 browser.find_element(By.XPATH, '//*[@id="btnPlus"]').click()
 browser.find_element(By.ID, "businessNm").click()
+
+# browser.find_element(By.XPATH, '//*[@id="root4747"]/i').click() # 업종 선택 부분
+# browser.find_element(By.XPATH, '//*[@id="46"]/i').click() # 업종 선택 부분
+# browser.find_element(By.ID, "467_anchor").click() # 업종 선택 부분
+
 time.sleep(10) # 업종 선택시간
 
 browser.find_element(By.XPATH, '//*[@id="maxResultsCb"]/option[4]').click() # 조회 100
@@ -27,7 +32,6 @@ browser.find_element(By.XPATH, '//*[@id="searchForm"]/div[2]/div[2]/a[1]').click
 time.sleep(3)
 
 com_nums = [] # 사업자 등록번호 list
-
 
 
 # 페이지 로딩 대기
