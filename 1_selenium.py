@@ -54,7 +54,6 @@ def same_area(cnt):
     # 현재 폴더에서 ETFI로 시작하는 파일 중 첫 번째 파일을 찾음
     filename = next((file for file in os.listdir('.') if re.match('^ETFI', file)), None)
 
-    #파일 갯수 만큼 -> 한 업체당 엑셀 표 3개
     b = load_workbook(filename)
     bs = b["Sheet1"] # Dict 로 sheet 접근
 
@@ -174,13 +173,17 @@ wb = Workbook()
 ws = wb.active
 ws.title = "동종업종"
 data = []
-cnt = 1
 
 
 # -----xlsx 반복문 지점-----
-for i in range(1, len(com_nums) + 1):
-    if 
-    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys(com_nums[i]) # 메인 화면 에서 첫 업체명 입력
+for i in range(len(com_nums)):
+    vars = {} # 변수용 딕셔너리
+    vars["input1"] = len(browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]'))
+    if browser.execute_script("return (arguments[0]>0)", vars["input1"]): # 첫 화면일때
+        browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys(com_nums[i]) # 메인 화면 에서 첫 업체명 입력
+    vars["input2"] = len(browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/header/div/div[1]/div[1]/div[1]/input[1]'))
+    if browser.execute_script("return (argument[0]>0)", vars["input2"]): # 재무 탭에서 다음 업체 검색 시
+        browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/header/div/div[1]/div[1]/div[1]/input[1]').send_keys(com_nums[i])
     browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/button').click() # 검색버튼 클릭.
     browser.find_element(By.XPATH, '//*[@id="et-area"]/div/div[2]/ul/li/div/ul[3]/li[4]/a').click() # 재무 
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[1]/div[2]/div/span[2]/label').click() # 일반기업회계 
@@ -191,12 +194,12 @@ for i in range(1, len(com_nums) + 1):
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[7]/button').click() # 조회하기
     time.sleep(1)
 
-    same_area() # 재무제표 다운
+    same_area(1) # 재무제표 다운
     
     browser.find_element(By.LINK_TEXT, "손익계산서").click() 
     # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[2]/div/div/div[2]/div/div[1]/div/div/button').click() 손익계산서 excel 다운로드 클릭
 
-    same_area() # 손익계산서 다운
+    same_area(2) # 손익계산서 다운
 
     browser.find_element(By.LINK_TEXT, "재무분석").click() 
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 일반기업회계
@@ -204,6 +207,4 @@ for i in range(1, len(com_nums) + 1):
 
     # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[2]/div[2]/div[1]/div/div/button').click() 재무분석 excel 다운로드 클릭
 
-    same_area() # 재무분석 다운
-
-    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/header/div/div[1]/div[1]/div[1]/input[1]').send_keys(com_nums[i])
+    same_area(3) # 재무분석 다운
