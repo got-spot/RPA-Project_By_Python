@@ -17,11 +17,6 @@ options.add_experimental_option('detach', True) # 브라우저 바로 닫힘 방
 browser = webdriver.Chrome(options=options)
 com_nums = [] # 사업자 등록번호 list
 
-wb = Workbook()
-ws = wb.active
-ws.title = "동종업종"
-data = []
-
 pre_page = browser.find_element(By.XPATH, '//*[@id="psWrap"]/div[2]/ul/li[1]/a')
 soup = BeautifulSoup(browser.page_source, 'html.parser')
 def scrap():    # 동종업종 사업자등록번호 저장 반복문
@@ -55,18 +50,48 @@ def scrap():    # 동종업종 사업자등록번호 저장 반복문
             print('페이지 끝')
             break
                 
-def excel_down():
-    for i in range(len(com_nums)):
-        filename = "재무재표{}.csv".format(i)
-        f = open(filename, "w", encoding="utf-8-sig", newline="")
-        writer = csv.writer(f)
-        soup = BeautifulSoup(browser.page_source, "lxml")
+def same_area(cnt):
+    # 현재 폴더에서 ETFI로 시작하는 파일 중 첫 번째 파일을 찾음
+    filename = next((file for file in os.listdir('.') if re.match('^ETFI', file)), None)
 
-        data_rows = soup.find("table", attrs={"class":"details"}).find("tbody").find_all("tr")
-        for row in data_rows:
-            columns = row.find_all("td")
-            data = [column.get_text() for column in columns]
-            writer.writerow(data)
+    #파일 갯수 만큼 -> 한 업체당 엑셀 표 3개
+    b = load_workbook(filename)
+    bs = b["Sheet1"] # Dict 로 sheet 접근
+
+    j=2 # 2행 부터
+    while True:
+        data.append( # 데이터 담는 과정
+            [
+                bs["B{}".format(j)].value, 
+                bs["C{}".format(j)].value, 
+                bs["D{}".format(j)].value, 
+                bs["E{}".format(j)].value
+            ]
+        )
+        j = j+1
+        if bs["B{}".format(j)].value == None:
+            break
+    if cnt%3 == 1:       
+        for i in range(len(data)): # 데이터 쓰는 과정 (재무상태표)
+            wb["동종업종"]["B{}".format(i+3)] = data[i][0]
+            wb["동종업종"]["C{}".format(i+3)] = data[i][1]
+            wb["동종업종"]["D{}".format(i+3)] = data[i][2]
+            wb["동종업종"]["E{}".format(i+3)] = data[i][3]
+        cnt +=1
+    if cnt%3 == 2:
+        for i in range(len(data)): # 데이터 쓰는 과정 (손익계산서)
+            wb["동종업종"]["B{}".format(i+803)] = data[i][0]
+            wb["동종업종"]["C{}".format(i+803)] = data[i][1]
+            wb["동종업종"]["D{}".format(i+803)] = data[i][2]
+            wb["동종업종"]["E{}".format(i+803)] = data[i][3]
+        cnt +=1
+    if cnt%3 == 0:
+        for i in range(len(data)): # 데이터 쓰는 과정 (재무분석표)
+            wb["동종업종"]["B{}".format(i+1146)] = data[i][0]
+            wb["동종업종"]["C{}".format(i+1146)] = data[i][1]
+            wb["동종업종"]["D{}".format(i+1146)] = data[i][2]
+            wb["동종업종"]["E{}".format(i+1146)] = data[i][3]
+        cnt +=1
 
 # browser.maximize_window()
 wait = WebDriverWait(browser, 10)
@@ -145,10 +170,17 @@ browser.find_element(By.CSS_SELECTOR, "[title='로그인']").click() #로그인 
 time.sleep(2)
 browser.find_element(By.XPATH, '//*[@id="app"]/div[2]/div/div[2]/div/div/ul/button').click() # 김민성님 로그인 되었습니다 [확인] 버튼
 '''
+wb = Workbook()
+ws = wb.active
+ws.title = "동종업종"
+data = []
+cnt = 1
 
-# -----csv 반복문 지점-----
-for i in range(len(com_nums)):
-    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys(com_nums[i]) # 검색어 입력
+
+# -----xlsx 반복문 지점-----
+for i in range(1, len(com_nums) + 1):
+    if 
+    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/input[1]').send_keys(com_nums[i]) # 메인 화면 에서 첫 업체명 입력
     browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[1]/div/div/div/div[1]/div[1]/div/div/div[1]/button').click() # 검색버튼 클릭.
     browser.find_element(By.XPATH, '//*[@id="et-area"]/div/div[2]/ul/li/div/ul[3]/li[4]/a').click() # 재무 
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[1]/div[2]/div/span[2]/label').click() # 일반기업회계 
@@ -159,13 +191,19 @@ for i in range(len(com_nums)):
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[1]/div/div[7]/button').click() # 조회하기
     time.sleep(1)
 
-    excel_down() # 재무제표 다운
+    same_area() # 재무제표 다운
     
     browser.find_element(By.LINK_TEXT, "손익계산서").click() 
     # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[1]/div/div[2]/div/div/div/div[2]/div/div/div[2]/div/div[1]/div/div/button').click() 손익계산서 excel 다운로드 클릭
+
+    same_area() # 손익계산서 다운
 
     browser.find_element(By.LINK_TEXT, "재무분석").click() 
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 일반기업회계
     browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[1]/div/div[2]/div[2]/div/span[2]/label').click() # 조회하기
 
     # browser.find_element(By.XPATH, '//*[@id="etfi110m1"]/div/div[3]/div/div/div/div[4]/div/div[2]/div[2]/div[1]/div/div/button').click() 재무분석 excel 다운로드 클릭
+
+    same_area() # 재무분석 다운
+
+    browser.find_element(By.XPATH, '//*[@id="app"]/div[1]/header/div/div[1]/div[1]/div[1]/input[1]').send_keys(com_nums[i])
