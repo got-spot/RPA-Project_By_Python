@@ -39,14 +39,13 @@ corps_df = pd.DataFrame({'corp_code':corp_code,'corp_name':corp_name,
 # corps_df = corps_df.loc[corps_df['stock_code']!=' ',:].reset_index(drop=True)
 
 print('총 회사수는 : ' + str(corps_df.shape[0]))
-# print('총 회사수는 : ' + str(j))
 
 #전체결과저장
 result_all=[]
 corf_detail=pd.DataFrame()
 
 # 수집한 회사에 대해서 for문.
-for i, r in corps_df.iloc[:100].iterrows():
+for i, r in corps_df.iterrows():
     #if i == 2:
     #    break
     
