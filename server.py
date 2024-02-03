@@ -1,8 +1,8 @@
 import pymysql
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, Response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import text
-from fetch_samearea import fetch_samearea
+from getExcelStreamByCompanyName import getExcelStreamByCompanyName
 db = SQLAlchemy()
 
 app = Flask(__name__)
@@ -47,6 +47,15 @@ class corpTable(db.Model):
 def index(): # home
     return form()
 
+def form():
+    content = '''
+       <form action="/corp/companies" method = 'POST'>
+            <input type="text" name="corp" placeholder="기업 이름 입력">
+            <input type="submit" value="검색">
+        </form>
+    '''
+    return content
+
 @app.route('/corp/companies', methods = ['POST', 'GET'])
 def corp_res():
     if request.method == 'POST':
@@ -54,20 +63,30 @@ def corp_res():
         #return render_template('index.html', result=result)
     try:
         a = db.session.query(corpTable.induty_code).filter(corpTable.corp_name.like(f'%{corp}%')) # 종목코드 
-        query = db.session.query(corpTable.bizr_no,corpTable.stock_name, corpTable.ceo_nm).filter(corpTable.induty_code == a).order_by(corpTable.stock_name)
+        query = db.session.query(corpTable.bizr_no,corpTable.stock_name, corpTable.ceo_nm).filter(corpTable.induty_code == a) # .order_by(corpTable.stock_name)
         corps = query.all()
 
         corp_text = '<ul>'
         for corp in corps:
-            corp_text += '<li>' + corp.bizr_no + ' : ' + corp.stock_name + ' (' + corp.ceo_nm + ')' '</li>'
+            corp_text += f'<li> {corp.bizr_no}  :  {corp.stock_name} </li>'
         corp_text += '</ul>'
-        return corp_text
+        return corp_text + '<input type="button" value="동종업종 엑셀 다운">'
     except Exception as e:
         # e holds description of the error
         error_text = "<p>The error:<br>" + str(e) + "</p>"
         hed = '<h1>Something is broken.</h1>'
         return hed + error_text
-
+    
+# @app.route('/corp/companies', methods = ['POST', 'GET'])
+def GetExcel():
+    content = '''
+       <form action="/corp/companies/xlsx" method = 'POST'>
+            <input type="submit" name="xlsx" value="동종업종 엑셀파일 생성">
+        </form>
+    '''
+    return content
+    
+"""
 @app.route('/corp/fetch_samearea', methods = ['POST', 'GET'])
 def corp_fetch():
     if request.method == 'POST':
@@ -87,15 +106,6 @@ def corp_fetch():
         hed = '<h1>Something is broken.</h1>'
         return hed + error_text
 
-def form():
-    content = '''
-       <form action="/corp/companies" method = 'POST'>
-            <input type="text" name="corp" placeholder="기업 이름 입력">
-            <input type="submit" value="검색">
-        </form>
-    '''
-    return content
-
 @app.route('/fetch')
 def fetch_form():
     content = '''
@@ -105,6 +115,22 @@ def fetch_form():
         </form>
     '''
     return content
+"""
+
+@app.route('/download', methods = ['POST', 'GET']) # URL 설정하기
+def download():
+    # CSV 파일 형태로 브라우저가 파일다운로드라고 인식하도록 만들어주기
+    if request.method == 'POST':
+        corp = request.form["corp"]
+        #return render_template('index.html', result=result)
+    output = getExcelStreamByCompanyName(corp)
+    response = Response(
+        output.getvalue(),
+        mimetype="application/vnd.ms-excel",
+        content_type='application/octet-stream',
+    )
+    response.headers["Content-Disposition"] = "attachment; filename=merged.xlsx" # 다운받았을때의 파일 이름 지정해주기
+    return response
 
 
 if __name__ == '__main__':
