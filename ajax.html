@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id = "msg"></div>
+        <form name='frmExcelRequest' action="downloadExcel" method="POST">
+            <input type="hidden" name="jobno" value="{{output}}">
+            <input type="submit" id="btnDownload" value="엑셀파일 생성">
+        </form>
+    <script>
+        $(function() {
+        
+        timer = setInterval( function () {
+//        console.log({{output}});
+            $.ajax ({
+            "url" : "/AjaxCrawlStatus?jobno={{output}}",
+            cache : false,
+            success : function (html) {
+            //console.log(html);
+                if (html == "1"){
+                    msg = "크롤링이 완료되었습니다.";
+                    $("#btnDownload").prop( "disabled", false );
+                }
+                else if (html == "0"){
+                    msg = "크롤링 진행중입니다. 기다려주세요.";
+                    $("#btnDownload").prop( "disabled", true );
+                }
+                else if (html == "-1"){
+                    msg = "작업id {{output}}은 존재하지 않은 작업입니다.";
+                    $("#btnDownload").prop( "disabled", true );
+                }
+                $("#msg").text(msg);
+            }
+        
+            });
+        
+            }, 1000);
+        
+        });
+        </script>
+</body>
+</html>
