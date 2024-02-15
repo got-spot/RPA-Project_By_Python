@@ -4,8 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import text
 import mysql.connector
 # from getExcelStreamByCompanyName import getExcelStreamByCompanyName
-from Function import submitCrawlJob
-from make_excel import getExcelStreamByCompanyName
+from Function import submitCrawlJob,getjobstatus
+from make_excel import getExcelStreamByCompanyName, getExcelStreamByJobno
 
 db = SQLAlchemy()
 app = Flask(__name__)
@@ -75,7 +75,6 @@ def corp_res():
             corp_text += f'''
             <li> 
                 <input type="checkbox" name="check" value="{corp.bizr_no}"> {corp.bizr_no}  :  {corp.stock_name} 
-                
             </li>
             '''
         corp_text += '</ul><input type="submit" value="엑셀파일 생성 시작"> </form>'
@@ -86,8 +85,10 @@ def corp_res():
         hed = '<h1>Something is broken.</h1>'
         return hed + error_text 
 
-@app.route('/corp/companies/CretopDown', methods = ['POST', 'GET']) # URL 설정하기
+@app.route('/downloadExcel', methods = ['POST', 'GET']) # URL 설정하기
 def CretopDown():
+
+    ''' 목록을 URL로 받았을 때
     corp_list = request.form.getlist('check')
     corp_text = '('
     i = 0
@@ -97,7 +98,11 @@ def CretopDown():
         if i < len(corp_list):
             corp_text += ","
     corp_text += ')'
+
     output = getExcelStreamByCompanyName(corp_text)
+    '''
+    # jobno만 받고 회사목록은 DB에서 Select 할 때
+    output = getExcelStreamByJobno(request.values['jobno'])
     # return output
     response = Response(
         output.getvalue(),
@@ -113,9 +118,29 @@ def crawlRequest():
     corp_list = request.form.getlist('check')
     output = submitCrawlJob(corp_list)
     # return output
+    # print(output)
+    return render_template('ajax.html',output=output)
 
+@app.route('/AjaxCrawlStatus', methods = ['POST', 'GET']) # URL 설정하기
+def AjaxCrawlStatus():
+    mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="admin",
+    database="dart"
+    )
+    mycursor = mydb.cursor()
+    #jobno = mycursor.lastrowid
+    jobno = request.values['jobno']
+    if (jobno == None):
+        return '-1'
+    output = getjobstatus(jobno)
     return output
 
+@app.route('/CrawlStatus', methods = ['POST', 'GET']) # URL 설정하기
+def CrawlStatus():
+    jobno = request.values['jobno']
+    return render_template('ajax.html',output=jobno)
 
 
 
@@ -139,4 +164,4 @@ def crawlRequest():
 #     return response
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5000)
