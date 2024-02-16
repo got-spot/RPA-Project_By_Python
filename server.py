@@ -66,19 +66,10 @@ def corp_res():
         global corp 
         corp = request.form["corp"]
     try:
-        a = db.session.query(corpTable.induty_code).filter(corpTable.corp_name.like(f'%{corp}%')) # 종목코드 
-        query = db.session.query(corpTable.bizr_no,corpTable.stock_name, corpTable.ceo_nm).filter(corpTable.induty_code == a) # .order_by(corpTable.stock_name)
+        subquery = db.session.query(corpTable.induty_code).filter(corpTable.corp_name.like(f'%{corp}%')).scalar_subquery() # 종목코드 
+        query = db.session.query(corpTable.bizr_no,corpTable.stock_name, corpTable.ceo_nm).filter(corpTable.induty_code == subquery) # .order_by(corpTable.stock_name)
         corps = query.all()
-        # corp_text = '<form action="/corp/companies/CretopDown" method = "POST"><ul>'
-        corp_text = '<form action="/crawlRequest" method = "POST"><ul>'
-        for corp in corps:
-            corp_text += f'''
-            <li> 
-                <input type="checkbox" name="check" value="{corp.bizr_no}"> {corp.bizr_no}  :  {corp.stock_name} 
-            </li>
-            '''
-        corp_text += '</ul><input type="submit" value="엑셀파일 생성 시작"> </form>'
-        return corp_text
+        return render_template('result.html', corps=corps)
     except Exception as e:
         # e holds description of the error
         error_text = "<p>The error:<br>" + str(e) + "</p>"
