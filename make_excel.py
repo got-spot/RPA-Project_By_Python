@@ -1,5 +1,7 @@
-import mysql.connector, base64, openpyxl, io
-from openpyxl import Workbook
+import mysql.connector, base64, openpyxl, io, os, re
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font, Border, Side, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 from appendSheet import appendSheet
 
 def getExcelStreamByCompanyName(corp):
@@ -133,4 +135,28 @@ def getExcelStreamByJobno(jobno):
     output = io.BytesIO()
     wb_dest.save(output)
     wb_dest.close()
+    ## ----------------엑셀 꾸미는 부분--------------
+    wb = load_workbook(output) # sample.xlsx 파일에서 wb 을 불러옴
+    ws = wb.active
+
+    row_3 = ws[3]
+    thin_border = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
+
+    # ---------------------3행 굵게/가운데 정렬
+    for i in range(2,len(row_3)+1):
+        a1 = ws[f"{get_column_letter(i)}3"]
+        a1.font = Font(bold=True)
+        a1.alignment = Alignment(horizontal="center", vertical="center")
+        a1.fill = PatternFill(fgColor="E7E5E6", fill_type="solid")
+        a1.border = thin_border
+        
+    ## 각 칼럼에 대해서 모든 셀값의 문자열 개수에서 1.1만큼 곱한 것들 중 최대값을 계산한다.
+    for column_cells in ws.columns:
+        length = max(len(str(cell.value))*1.1 for cell in column_cells)    
+        ws.column_dimensions[column_cells[0].column_letter].width = length   
+
+    # 틀 고정
+    ws.freeze_panes = "B4" 
+
+    wb.save(output)
     return output
