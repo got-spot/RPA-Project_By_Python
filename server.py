@@ -60,15 +60,38 @@ def form():
     return content
 
 
+# @app.route('/corp/companies', methods = ['POST', 'GET'])
+# def corp_res():
+#     if request.method == 'POST':
+#         global corp 
+#         corp = request.form["corp"]
+#     try:
+#         subquery = db.session.query(corpTable.induty_code).filter(corpTable.corp_name.like(f'%{corp}%')).scalar_subquery() # 종목코드 
+#         query = db.session.query(corpTable.bizr_no,corpTable.stock_name, corpTable.ceo_nm).filter(corpTable.induty_code == subquery) # .order_by(corpTable.stock_name)
+#         corps = query.all()
+#         return render_template('result.html', corps=corps)
+#     except Exception as e:
+#         # e holds description of the error
+#         error_text = "<p>The error:<br>" + str(e) + "</p>"
+#         hed = '<h1>Something is broken.</h1>'
+#         return hed + error_text 
+    
 @app.route('/corp/companies', methods = ['POST', 'GET'])
 def corp_res():
     if request.method == 'POST':
         global corp 
         corp = request.form["corp"]
     try:
-        subquery = db.session.query(corpTable.induty_code).filter(corpTable.corp_name.like(f'%{corp}%')).scalar_subquery() # 종목코드 
-        query = db.session.query(corpTable.bizr_no,corpTable.stock_name, corpTable.ceo_nm).filter(corpTable.induty_code == subquery) # .order_by(corpTable.stock_name)
-        corps = query.all()
+        mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="admin",
+        database="dart"
+        )
+        query = f"select * FROM dart.corp_table where induty_code in (select induty_code from dart.corp_table where stock_name like '%{corp}%');"
+        mycursor = mydb.cursor()
+        mycursor.execute(query)
+        corps = mycursor.fetchall()
         return render_template('result.html', corps=corps)
     except Exception as e:
         # e holds description of the error
