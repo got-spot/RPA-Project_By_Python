@@ -1,6 +1,6 @@
 import mysql.connector, base64, openpyxl, io, os, re
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font, Border, Side, PatternFill, Alignment
+from openpyxl.styles import Font, Border, Side, PatternFill, Alignment, DEFAULT_FONT
 from openpyxl.utils import get_column_letter
 from appendSheet import appendSheet
 
@@ -93,6 +93,9 @@ def getExcelStreamByJobno(jobno):
     # data[0][2] # => excel_3 (재무분석표)
 
     wb_dest = Workbook() # 새 워크북 생성
+    _font = Font(name="Arial", sz=10, b=True)
+    _font = Font(name="Arial", sz=9)
+    {k: setattr(DEFAULT_FONT, k, v) for k, v in _font.__dict__.items()}
     ws_dest = wb_dest.active # 현재 활성화된 sheet 가져옴
     ws_dest.title = "원본" # sheet 의 이름을 변경
 
@@ -100,12 +103,14 @@ def getExcelStreamByJobno(jobno):
     start_col = 1
     row_offset = 1
     col_offset = 2
+    no_col = 4
     # return str(len(data))
     for company in range(len(data)):
         ws_dest.cell(row = start_row, column = start_col, value = data[company][3] )
         start_row += 1
-        if company > 0: 
+        if company > 0: #두번째 회사부터
             col_offset = 3
+            no_col = 3
         for i in range(3):
             image = data[company][i]
  
@@ -125,13 +130,13 @@ def getExcelStreamByJobno(jobno):
             workbook_xml.seek(0)
             wb = openpyxl.load_workbook(workbook_xml)
             ws_src = wb.active
-            end_row, end_col = appendSheet(ws_dest, start_row, start_col, ws_src, row_offset, col_offset)
+            end_row, end_col = appendSheet(ws_dest, start_row, start_col, ws_src, row_offset, col_offset, no_col)
             start_row = end_row
-        end_col += 1
         start_col = end_col
         start_row = 1
 
     #wb_dest.save("merged.xlsx")
+
     output = io.BytesIO()
     wb_dest.save(output)
     wb_dest.close()
@@ -151,9 +156,15 @@ def getExcelStreamByJobno(jobno):
         a1.border = thin_border
         
     ## 각 칼럼에 대해서 모든 셀값의 문자열 개수에서 1.1만큼 곱한 것들 중 최대값을 계산한다.
+    #for column_cells in ws.columns:
+    #    length = max(len(str(cell.value))*1.1 for cell in column_cells)    
+    #    ws.column_dimensions[column_cells[0].column_letter].width = length   
+
     for column_cells in ws.columns:
-        length = max(len(str(cell.value))*1.1 for cell in column_cells)    
-        ws.column_dimensions[column_cells[0].column_letter].width = length   
+        new_column_length = max(len(str(cell.value)) for cell in column_cells)
+        new_column_letter = (get_column_letter(column_cells[0].column))
+        if new_column_length > 0:
+            ws.column_dimensions[new_column_letter].width = new_column_length*1.1
 
     # 틀 고정
     ws.freeze_panes = "B4" 

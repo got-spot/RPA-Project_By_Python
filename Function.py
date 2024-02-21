@@ -15,10 +15,28 @@ def submitCrawlJob(corp_list):
     for bizr_no in corp_list:
         query = f"insert into dart.job_item (biz_no, jobno) values ({bizr_no}, {inserted_id})"
         mycursor.execute(query)
+        mydb.commit()
     mydb.commit()
     mycursor.close()
     mydb.close()
     return str(inserted_id)
+
+def registerBizno(corp_list):
+    mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="admin",
+    database="dart"
+    )
+    mycursor = mydb.cursor()
+    #print(inserted_id)
+    for bizr_no in corp_list:
+        query = f"insert into dart.corp_table (bizr_no) values ({bizr_no})"
+        mycursor.execute(query)
+        mydb.commit()
+    mycursor.close()
+    mydb.close()
+    return
 
 def getjobstatus(jobno):
     mydb = mysql.connector.connect(

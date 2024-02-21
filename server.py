@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import text
 import mysql.connector
 # from getExcelStreamByCompanyName import getExcelStreamByCompanyName
-from Function import submitCrawlJob,getjobstatus
+from Function import submitCrawlJob,getjobstatus, registerBizno
 from make_excel import getExcelStreamByCompanyName, getExcelStreamByJobno
 
 db = SQLAlchemy()
@@ -106,7 +106,10 @@ def CretopDown():
 
 @app.route('/crawlRequest', methods = ['POST', 'GET']) # URL 설정하기
 def crawlRequest():
-    corp_list = request.form.getlist('check')
+    selected_corp_list = request.form.getlist('selectedCompany')
+    added_corp_list = request.form.getlist('addedCompany')
+    registerBizno(added_corp_list)
+    corp_list = selected_corp_list + added_corp_list
     output = submitCrawlJob(corp_list)
     # return output
     # print(output)
@@ -134,10 +137,10 @@ def CrawlStatus():
     return render_template('ajax.html',output=jobno)
 
 
-
-
-
-
+@app.route('/biznoValidate', methods = ['POST', 'GET']) # URL 설정하기
+def biznoValidate():
+    bizno = request.values['bizno']
+    return render_template('ajax.html',output=bizno)
 
 
 # @app.route('/download', methods = ['POST', 'GET']) # URL 설정하기

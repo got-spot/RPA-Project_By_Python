@@ -12,7 +12,7 @@ def updateStatus(jobno):
 
 def getCrawlTarget():
     query = "select jobno from dart.crawl_job where status = 0 order by jobno asc limit 1"
-    query2 = "select b.corp_code, a.biz_no, b.corp_name from dart.job_item a, dart.corp_table b where a.biz_no = b.bizr_no and excel_1 is null and jobno = %s;"
+    query2 = "select b.corp_code, a.biz_no, b.corp_name from dart.job_item a, dart.corp_table b where a.biz_no = b.bizr_no and excel_2 is null and jobno = %s;"
     mycursor = mydb.cursor()
     mycursor.execute(query)
     jobno  = mycursor.fetchall()
