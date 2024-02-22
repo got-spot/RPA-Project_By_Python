@@ -32,7 +32,7 @@ def corp_res():
         password="admin",
         database="dart"
         )
-        query = f"select * FROM dart.corp_table where induty_code in (select induty_code from dart.corp_table where stock_name like '%{corp}%');"
+        query = f"select * FROM dart.corp_table where induty_code in (select induty_code from dart.corp_table where stock_name like '%{corp}%') order by bizr_no;"
         mycursor = mydb.cursor()
         mycursor.execute(query)
         corps = mycursor.fetchall()

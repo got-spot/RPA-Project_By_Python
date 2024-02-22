@@ -13,11 +13,13 @@ from selenium.webdriver.common.keys import Keys
 import mysql.connector
 from selenium.common import exceptions
 from selenium.common.exceptions import WebDriverException
+from bs4 import BeautifulSoup
 
 excel_insertion_sql = "update dart.corp_table set excel_1 = %s where corp_code = %s"
 excel_2_sql = "update dart.corp_table set excel_2 = %s where corp_code = %s"
 excel_3_sql = "update dart.corp_table set excel_3 = %s where corp_code = %s"
 same_area_query_sql = "SELECT corp_code, bizr_no, corp_name FROM dart.corp_table;"
+corp_name_insert_query = "update dart.corp_table set corp_name = %s where bizr_no = %s"
 
 def clearPerformanceLog(browser):
    browser.get_log('performance')
@@ -31,7 +33,6 @@ def cretopDown(companies):
     database="dart"
   )
   mycursor = mydb.cursor()
-
   # chrome_options.set_capability("prefs",True)
   caps = DesiredCapabilities.CHROME.copy() 
   caps['goog:loggingPrefs'] = {"performance": "ALL"}
@@ -84,6 +85,18 @@ def cretopDown(companies):
     elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "i[class='search icon50 icon50 search']")))
     elem.click() # 검색 아이콘 클릭
     time.sleep(3)
+
+    try: # 회사이름 insert 시도
+      soup = BeautifulSoup(browser.page_source, "html.parser")
+      corps = soup.find("button", attrs={"class": "btn result-layer-open"})
+      corp = corps.span
+      corp_name = corp.get_text()
+      args = (corp_name, company[1]) 
+      mycursor.execute(corp_name_insert_query, args)
+      mydb.commit()
+    except:
+      print("이미 존재하는 업체입니다.")
+    time.sleep(1)
 
     elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#app > div.wrap > div.container > div > div > div:nth-child(2) > div:nth-child(3) > div.search-result__area > div > ul > li > div > ul.btn__list > li:nth-child(4) > a"))) # 재무 탭
     browser.execute_script("arguments[0].click()", elem) #  검색결과 페이지 로딩완료 및 재무단추 클릭
